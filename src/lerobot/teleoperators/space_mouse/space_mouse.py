@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import math
 import logging
 import os
 import sys
@@ -28,6 +29,7 @@ class SpaceMouseTeleop(Teleoperator, Thread):
         self.max_value = config.max_value
         self.frequency = config.frequency
         self.max_pos_speed = config.max_pos_speed
+        self.max_rot_speed = config.max_rot_speed
         deadzone = config.deadzone
         self._is_connected = False
         self.dtype = np.float32 # CHECK! make it configurable ???
@@ -158,9 +160,7 @@ class SpaceMouseTeleop(Teleoperator, Thread):
         sm_state = self.get_motion_state_transformed()
 
         dpos = sm_state[:3] * self.max_pos_speed / self.frequency
-            
-        # Currently No rotation operation 
-        # drot_xyz = sm_state[3:] * (max_rot_speed / frequency)
+        drot_xyz = sm_state[3:] * (self.max_rot_speed / self.frequency)
         
         # if not self.is_button_pressed(0):
         #     # translation mode
@@ -170,16 +170,22 @@ class SpaceMouseTeleop(Teleoperator, Thread):
         # if not self.is_button_pressed(1):
         
         # X-Y 2D translation mode, no gripper control. Modify the code if you need more DOF control
-        dpos[2] = 0    
+        # dpos[2] = 0    
 
         gripper_action = 1.0
 
         # output is delta change of the robot pose
         action_dict = {
-            "pose.dx": dpos[0],
-            "pose.dy": dpos[1],
-            "pose.dz": dpos[2],
+            "pose.dx": 0, # dpos[0],
+            "pose.dy": 0, # dpos[1],
+            "pose.dz": 0, # dpos[2],
+            "pose.rx": math.radians(drot_xyz[0]),
+            "pose.ry": math.radians(drot_xyz[1]),
+            "pose.rz": math.radians(drot_xyz[2]),
         }
+
+        if action_dict["pose.rx"] != 0 or action_dict["pose.ry"] != 0 or action_dict["pose.rz"] != 0:
+            print(f"\tinput rot: (x: {action_dict['pose.rx']:0.3f}) (y: {action_dict['pose.ry']:0.3f}) (z: {action_dict['pose.rz']:0.3f})")
 
         if self.config.use_gripper:
             action_dict.update({"gripper.pos": gripper_action})

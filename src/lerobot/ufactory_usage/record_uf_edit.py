@@ -77,6 +77,16 @@ from lerobot.utils.utils import (
 from lerobot.utils.visualization_utils import init_rerun, log_rerun_data
 from lerobot.scripts.lerobot_record import DatasetRecordConfig, RecordConfig
 
+from scipy.spatial.transform import Rotation as R
+import numpy as np
+
+
+def safe_add_rotations(obs, action):
+    # safely apply action euler angles to current state given in euler angles
+    rot1 = R.from_euler('xyz', obs)
+    rot2 = R.from_euler('xyz', action)
+    rot_combined = rot1 * rot2
+    return rot_combined.as_euler('xyz', degrees=False)
 
 @safe_stop_image_writer
 def record_loop(
@@ -153,8 +163,37 @@ def record_loop(
             action = teleop.get_action() 
             # (space mouse) from delta Cartesian cmd to absolute command
             if "pose.dx" in action:
-                last_robot_cmd.update({"pose.x": last_robot_cmd["pose.x"] + action["pose.dx"], "pose.y": last_robot_cmd["pose.y"] + action["pose.dy"], "pose.z": last_robot_cmd["pose.z"] + action["pose.dz"]})
-                action = last_robot_cmd.copy() # watch out this is shallow copy, not for nested dict
+                out = {}
+
+                if action["pose.rx"] != 0 or action["pose.ry"] != 0 or action["pose.rz"] != 0:
+                    out_angles = safe_add_rotations(np.array([last_robot_cmd["pose.rx"], last_robot_cmd["pose.ry"], last_robot_cmd["pose.rz"]]), np.array([action["pose.rx"], action["pose.ry"], action["pose.rz"]]))
+                    out["pose.rx"] = out_angles[0]
+                    out["pose.ry"] = out_angles[1]
+                    out["pose.rz"] = out_angles[2]
+                else:
+                    out["pose.rx"] = observation["pose.rx"]
+                    out["pose.ry"] = observation["pose.ry"]
+                    out["pose.rz"] = observation["pose.rz"]
+
+
+
+                for k in action:
+                    if ".d" in k:
+                        mod_k = "".join(k.split('d'))       # remove "d" from the action name
+                        out[mod_k] = action[k] + observation[mod_k]
+
+                if action["pose.rx"] != 0 or action["pose.ry"] != 0 or action["pose.rz"] != 0:
+                    print(f"\t({timestamp}) out rot: (x: {out['pose.rx']:0.3f}) (y: {out['pose.ry']:0.3f}) (z: {out['pose.rz']:0.3f}) (vs. (obs_x: {observation['pose.rx']:0.3f}) (obs_y: {observation['pose.ry']:0.3f}) (obs_z: {observation['pose.rz']:0.3f}))")
+                # action = out
+
+                last_robot_cmd.update(out)
+                action = last_robot_cmd.copy()
+
+
+                # import pdb
+                # pdb.set_trace()
+                # last_robot_cmd.update({"pose.x": last_robot_cmd["pose.x"] + action["pose.dx"], "pose.y": last_robot_cmd["pose.y"] + action["pose.dy"], "pose.z": last_robot_cmd["pose.z"] + action["pose.dz"]})
+                # action = last_robot_cmd.copy() # watch out this is shallow copy, not for nested dict
 
         elif policy is None and isinstance(teleop, list):
             arm_action = teleop_arm.get_action()

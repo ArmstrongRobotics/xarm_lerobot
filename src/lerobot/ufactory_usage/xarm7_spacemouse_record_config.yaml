@@ -2,7 +2,7 @@ RobotConfig:
   _target_: lerobot.robots.ufactory_robot.UFRobotConfig
   id: "jason"
   robot_dof: 7
-  robot_ip: "192.168.1.127"
+  robot_ip: "10.11.12.103"
   control_space: "cartesian"
   gripper_control: False
 
@@ -11,7 +11,7 @@ DatasetRecordConfig:
   # root: /home/<user_name>/.cache/huggingface/lerobot (default)
   repo_id: "ufactory/xarm7_pushT"
   single_task: "Push the T-block into the specified zone then go to reset position."
-  fps: 10
+  fps: 30
   episode_time_s: 60  # max duration for one episode
   reset_time_s: 20  # time for resetting env between episodes
   push_to_hub: False

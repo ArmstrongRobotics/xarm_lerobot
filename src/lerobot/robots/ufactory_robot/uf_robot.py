@@ -43,7 +43,7 @@ class UFRobot(Robot, Thread):
         self._control_space = self.config.control_space
 
         self.real_arm = None
-        self.cameras = make_cameras_from_configs(config.cameras)
+        self.cameras = {} # make_cameras_from_configs(config.cameras)
 
         self._is_connected = False
         self._is_calibrated =True
@@ -252,6 +252,7 @@ class UFRobot(Robot, Thread):
             if not self._rt_report_normal:
                 raise ConnectionError("RT Report for target robot NOT READY! ")
             cmd_list = [action["pose.x"], action["pose.y"], action["pose.z"], action["pose.rx"], action["pose.ry"], action["pose.rz"]]
+            # print(f"\t{cmd_list}")
             self.real_arm.set_position_aa(axis_angle_pose=cmd_list, speed=lin_spd, is_radian=True, wait=False)
             if self.config.gripper_control:
                 gripper_command = self.GRIPPER_OPEN + action["gripper.pos"] * (self.GRIPPER_CLOSE - self.GRIPPER_OPEN)

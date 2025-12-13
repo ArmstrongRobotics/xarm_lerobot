@@ -28,4 +28,5 @@ class SpaceMouseTeleopConfig(TeleoperatorConfig):
     use_gripper: bool = False
     frequency: int = 10 # hz
     max_pos_speed: int = 250 # mm/s
+    max_rot_speed: int = 250 # deg/s
     # Others: Calibration angles, joint directions etc.

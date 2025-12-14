@@ -48,6 +48,13 @@ class SpaceMouseTeleop(Teleoperator, Thread):
             [0,1,0]
         ], dtype=np.float32)
 
+        self.rx_zup_spnav = np.array([
+            [-1,0,0],
+            [0,0,1],
+            [0,-1,0]
+        ], dtype=np.float32)
+
+
     @property
     def action_features(self) -> dict:
         if self.config.use_gripper:
@@ -127,7 +134,7 @@ class SpaceMouseTeleop(Teleoperator, Thread):
         state = self.get_motion_state()
         tf_state = np.zeros_like(state)
         tf_state[:3] = self.tx_zup_spnav @ state[:3]
-        tf_state[3:] = self.tx_zup_spnav @ state[3:]
+        tf_state[3:] = self.rx_zup_spnav @ state[3:]
         return tf_state
 
     def is_button_pressed(self, button_id):

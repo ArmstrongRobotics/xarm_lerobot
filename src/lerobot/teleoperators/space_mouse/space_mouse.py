@@ -176,16 +176,16 @@ class SpaceMouseTeleop(Teleoperator, Thread):
 
         # output is delta change of the robot pose
         action_dict = {
-            "pose.dx": 0, # dpos[0],
-            "pose.dy": 0, # dpos[1],
-            "pose.dz": 0, # dpos[2],
+            "pose.dx": dpos[0],
+            "pose.dy": dpos[1],
+            "pose.dz": dpos[2],
             "pose.rx": math.radians(drot_xyz[0]),
             "pose.ry": math.radians(drot_xyz[1]),
             "pose.rz": math.radians(drot_xyz[2]),
         }
 
-        if action_dict["pose.rx"] != 0 or action_dict["pose.ry"] != 0 or action_dict["pose.rz"] != 0:
-            print(f"\tinput rot: (x: {action_dict['pose.rx']:0.3f}) (y: {action_dict['pose.ry']:0.3f}) (z: {action_dict['pose.rz']:0.3f})")
+        # if action_dict["pose.rx"] != 0 or action_dict["pose.ry"] != 0 or action_dict["pose.rz"] != 0:
+        #     print(f"\tinput rot: (x: {action_dict['pose.rx']:0.3f}) (y: {action_dict['pose.ry']:0.3f}) (z: {action_dict['pose.rz']:0.3f})")
 
         if self.config.use_gripper:
             action_dict.update({"gripper.pos": gripper_action})

@@ -31,6 +31,7 @@ python record_uf_edit.py --config xarm7_gello_record_config.yaml --resume
 ```
 """
 
+import copy
 import logging
 import time
 from dataclasses import asdict, dataclass
@@ -163,31 +164,63 @@ def record_loop(
             action = teleop.get_action() 
             # (space mouse) from delta Cartesian cmd to absolute command
             if "pose.dx" in action:
-                out = {}
 
-                if action["pose.rx"] != 0 or action["pose.ry"] != 0 or action["pose.rz"] != 0:
-                    out_angles = safe_add_rotations(np.array([last_robot_cmd["pose.rx"], last_robot_cmd["pose.ry"], last_robot_cmd["pose.rz"]]), np.array([action["pose.rx"], action["pose.ry"], action["pose.rz"]]))
-                    out["pose.rx"] = out_angles[0]
-                    out["pose.ry"] = out_angles[1]
-                    out["pose.rz"] = out_angles[2]
-                else:
-                    out["pose.rx"] = observation["pose.rx"]
-                    out["pose.ry"] = observation["pose.ry"]
-                    out["pose.rz"] = observation["pose.rz"]
-
-
-
+                # last_robot_cmd.update({"pose.x": last_robot_cmd["pose.x"] + action["pose.dx"], "pose.y": last_robot_cmd["pose.y"] + action["pose.dy"], "pose.z": last_robot_cmd["pose.z"] + action["pose.dz"]})
+                prev = copy.deepcopy(last_robot_cmd)
                 for k in action:
+                    mod_k = "".join(k.split('d'))       # remove "d" from the action name
                     if ".d" in k:
-                        mod_k = "".join(k.split('d'))       # remove "d" from the action name
-                        out[mod_k] = action[k] + observation[mod_k]
+                        last_robot_cmd[mod_k] = observation[mod_k] + action[k]      # translations, no memory
+                    else:
+                        if action[k] != 0:
+                            # last_robot_cmd[mod_k] = last_robot_cmd[mod_k] + action[k]       # TODO: prevent this from winding up TOO far
+                            last_robot_cmd[mod_k] = observation[mod_k] + action[k]
+                        else:
+                            last_robot_cmd[mod_k] = observation[mod_k]      # no input, stop rotation
 
                 if action["pose.rx"] != 0 or action["pose.ry"] != 0 or action["pose.rz"] != 0:
-                    print(f"\t({timestamp}) out rot: (x: {out['pose.rx']:0.3f}) (y: {out['pose.ry']:0.3f}) (z: {out['pose.rz']:0.3f}) (vs. (obs_x: {observation['pose.rx']:0.3f}) (obs_y: {observation['pose.ry']:0.3f}) (obs_z: {observation['pose.rz']:0.3f}))")
-                # action = out
+                    RESET = "\033[0m"
+                    CYAN = "\033[36m"
+                    GREEN = "\033[32m"
+                    YELLOW = "\033[33m"
+                    MAGENTA = "\033[35m"
+                    
+                    print(f"\n\t{GREEN}({timestamp:.3f}){RESET}")
+                    print(f"\t\tinput (x: {action['pose.rx']:0.3f}) (y: {action['pose.ry']:0.3f}) (z: {action['pose.rz']:0.3f})")
+                    print(f"\t\toutput (x: {last_robot_cmd['pose.rx']:0.3f}) (y: {last_robot_cmd['pose.ry']:0.3f}) (z: {last_robot_cmd['pose.rz']:0.3f})")
+                    print(f"\t\tobs (x: {observation['pose.rx']:0.3f}) (y: {observation['pose.ry']:0.3f}) (z: {observation['pose.rz']:0.3f}))")
+                    print(f"\t\tlast (x: {prev['pose.rx']:0.3f}) (y: {prev['pose.ry']:0.3f}) (z: {prev['pose.rz']:0.3f}))")
 
-                last_robot_cmd.update(out)
-                action = last_robot_cmd.copy()
+
+                
+                
+                action = last_robot_cmd.copy() # watch out this is shallow copy, not for nested dict
+
+                # out = {}
+
+                # if action["pose.rx"] != 0 or action["pose.ry"] != 0 or action["pose.rz"] != 0:
+                #     out_angles = safe_add_rotations(np.array([last_robot_cmd["pose.rx"], last_robot_cmd["pose.ry"], last_robot_cmd["pose.rz"]]), np.array([action["pose.rx"], action["pose.ry"], action["pose.rz"]]))
+                #     out["pose.rx"] = out_angles[0]
+                #     out["pose.ry"] = out_angles[1]
+                #     out["pose.rz"] = out_angles[2]
+                # else:
+                #     out["pose.rx"] = observation["pose.rx"]
+                #     out["pose.ry"] = observation["pose.ry"]
+                #     out["pose.rz"] = observation["pose.rz"]
+
+
+
+                # for k in action:
+                #     if ".d" in k:
+                #         mod_k = "".join(k.split('d'))       # remove "d" from the action name
+                #         out[mod_k] = action[k] + observation[mod_k]
+
+                # if action["pose.rx"] != 0 or action["pose.ry"] != 0 or action["pose.rz"] != 0:
+                #     print(f"\t({timestamp}) out rot: (x: {out['pose.rx']:0.3f}) (y: {out['pose.ry']:0.3f}) (z: {out['pose.rz']:0.3f}) (vs. (obs_x: {observation['pose.rx']:0.3f}) (obs_y: {observation['pose.ry']:0.3f}) (obs_z: {observation['pose.rz']:0.3f}))")
+                # # action = out
+
+                # last_robot_cmd.update(out)
+                # action = last_robot_cmd.copy()
 
 
                 # import pdb

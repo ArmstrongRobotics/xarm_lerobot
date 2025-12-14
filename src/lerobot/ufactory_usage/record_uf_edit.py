@@ -84,10 +84,10 @@ import numpy as np
 
 def safe_add_rotations(obs, action):
     # safely apply action euler angles to current state given in euler angles
-    rot1 = R.from_euler('xyz', obs)
-    rot2 = R.from_euler('xyz', action)
+    rot1 = R.from_rotvec(obs, degrees=False)
+    rot2 = R.from_euler('xyz', action, degrees=False)
     rot_combined = rot1 * rot2
-    return rot_combined.as_euler('xyz', degrees=False)
+    return rot_combined.as_rotvec(degrees=False)
 
 @safe_stop_image_writer
 def record_loop(
@@ -164,19 +164,35 @@ def record_loop(
             action = teleop.get_action() 
             # (space mouse) from delta Cartesian cmd to absolute command
             if "pose.dx" in action:
-
-                # last_robot_cmd.update({"pose.x": last_robot_cmd["pose.x"] + action["pose.dx"], "pose.y": last_robot_cmd["pose.y"] + action["pose.dy"], "pose.z": last_robot_cmd["pose.z"] + action["pose.dz"]})
                 prev = copy.deepcopy(last_robot_cmd)
-                for k in action:
-                    mod_k = "".join(k.split('d'))       # remove "d" from the action name
-                    if ".d" in k:
-                        last_robot_cmd[mod_k] = observation[mod_k] + action[k]      # translations, no memory
-                    else:
-                        if action[k] != 0:
-                            # last_robot_cmd[mod_k] = last_robot_cmd[mod_k] + action[k]       # TODO: prevent this from winding up TOO far
-                            last_robot_cmd[mod_k] = observation[mod_k] + action[k]
-                        else:
-                            last_robot_cmd[mod_k] = observation[mod_k]      # no input, stop rotation
+
+                # space mouse given as euler angles, xArm observation given as axis-angle
+                safe_added_angles = safe_add_rotations(
+                    np.array([observation["pose.rx"], observation["pose.ry"], observation["pose.rz"]]),
+                    np.array([action["pose.rx"], action["pose.ry"], action["pose.rz"]])
+                )
+
+
+                # safe_added_angles = safe_add_rotations(
+                #     np.array([last_robot_cmd["pose.rx"], last_robot_cmd["pose.ry"], last_robot_cmd["pose.rz"]]),
+                #     np.array([action["pose.rx"], action["pose.ry"], action["pose.rz"]])
+                # )
+
+
+                safe_added_angles = {
+                    "pose.rx" : safe_added_angles[0],
+                    "pose.ry" : safe_added_angles[1],
+                    "pose.rz" : safe_added_angles[2]
+                }
+
+                last_robot_cmd.update({
+                    "pose.x": observation["pose.x"] + action["pose.dx"], 
+                    "pose.y": observation["pose.y"] + action["pose.dy"], 
+                    "pose.z": observation["pose.z"] + action["pose.dz"],
+                    "pose.rx": safe_added_angles["pose.rx"],
+                    "pose.ry": safe_added_angles["pose.ry"],
+                    "pose.rz": safe_added_angles["pose.rz"],
+                })
 
                 if action["pose.rx"] != 0 or action["pose.ry"] != 0 or action["pose.rz"] != 0:
                     RESET = "\033[0m"
@@ -195,38 +211,6 @@ def record_loop(
                 
                 
                 action = last_robot_cmd.copy() # watch out this is shallow copy, not for nested dict
-
-                # out = {}
-
-                # if action["pose.rx"] != 0 or action["pose.ry"] != 0 or action["pose.rz"] != 0:
-                #     out_angles = safe_add_rotations(np.array([last_robot_cmd["pose.rx"], last_robot_cmd["pose.ry"], last_robot_cmd["pose.rz"]]), np.array([action["pose.rx"], action["pose.ry"], action["pose.rz"]]))
-                #     out["pose.rx"] = out_angles[0]
-                #     out["pose.ry"] = out_angles[1]
-                #     out["pose.rz"] = out_angles[2]
-                # else:
-                #     out["pose.rx"] = observation["pose.rx"]
-                #     out["pose.ry"] = observation["pose.ry"]
-                #     out["pose.rz"] = observation["pose.rz"]
-
-
-
-                # for k in action:
-                #     if ".d" in k:
-                #         mod_k = "".join(k.split('d'))       # remove "d" from the action name
-                #         out[mod_k] = action[k] + observation[mod_k]
-
-                # if action["pose.rx"] != 0 or action["pose.ry"] != 0 or action["pose.rz"] != 0:
-                #     print(f"\t({timestamp}) out rot: (x: {out['pose.rx']:0.3f}) (y: {out['pose.ry']:0.3f}) (z: {out['pose.rz']:0.3f}) (vs. (obs_x: {observation['pose.rx']:0.3f}) (obs_y: {observation['pose.ry']:0.3f}) (obs_z: {observation['pose.rz']:0.3f}))")
-                # # action = out
-
-                # last_robot_cmd.update(out)
-                # action = last_robot_cmd.copy()
-
-
-                # import pdb
-                # pdb.set_trace()
-                # last_robot_cmd.update({"pose.x": last_robot_cmd["pose.x"] + action["pose.dx"], "pose.y": last_robot_cmd["pose.y"] + action["pose.dy"], "pose.z": last_robot_cmd["pose.z"] + action["pose.dz"]})
-                # action = last_robot_cmd.copy() # watch out this is shallow copy, not for nested dict
 
         elif policy is None and isinstance(teleop, list):
             arm_action = teleop_arm.get_action()

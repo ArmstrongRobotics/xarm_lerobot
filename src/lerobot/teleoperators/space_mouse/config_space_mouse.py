@@ -26,7 +26,7 @@ class SpaceMouseTeleopConfig(TeleoperatorConfig):
     max_value: int = 300
     deadzone: tuple = (0,0,0,0,0,0)
     use_gripper: bool = False
-    frequency: int = 10 # hz
+    frequency: int = 30 # hz
     max_pos_speed: int = 250 # mm/s
     max_rot_speed: int = 250 # deg/s
     # Others: Calibration angles, joint directions etc.

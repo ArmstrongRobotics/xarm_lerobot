@@ -55,6 +55,10 @@ class SpaceMouseTeleop(Teleoperator, Thread):
         ], dtype=np.float32)
 
         self.desired_gripper_pos = 0        # default open
+        
+        self.lock_rotation = False
+        self.button_zero_release = True
+
 
 
     @property
@@ -172,11 +176,25 @@ class SpaceMouseTeleop(Teleoperator, Thread):
         drot_xyz = sm_state[3:] * (self.max_rot_speed / self.frequency)
         
         if self.is_button_pressed(0):
-            print("BUTTON ZERO PRESSED!!")
+            if self.button_zero_release:
+                RESET = "\033[0m"
+                CYAN = "\033[36m"
+                GREEN = "\033[32m"
+                YELLOW = "\033[33m"
+                MAGENTA = "\033[35m"
+                if self.lock_rotation:
+                    print(f"{YELLOW}UNLOCK ROTATION{RESET}")
+                    self.lock_rotation = False
+                else:
+                    print(f"{YELLOW}LOCK ROTATION{RESET}")
+                    self.lock_rotation = True
+            self.button_zero_release = False
+        else:
+            self.button_zero_release = True
+
 
         if self.is_button_pressed(1):
             # swap hold open/closed when gripper is pressed
-            print("BUTTON ONE PRESSED!!")
             if self.desired_gripper_pos == 244:
                 self.desired_gripper_pos = 0
             else:
@@ -199,9 +217,9 @@ class SpaceMouseTeleop(Teleoperator, Thread):
             "pose.dx": dpos[0],
             "pose.dy": dpos[1],
             "pose.dz": dpos[2],
-            "pose.rx": math.radians(drot_xyz[0]),
-            "pose.ry": math.radians(drot_xyz[1]),
-            "pose.rz": math.radians(drot_xyz[2]),
+            "pose.rx": math.radians(drot_xyz[0]) if not self.lock_rotation else 0,
+            "pose.ry": math.radians(drot_xyz[1]) if not self.lock_rotation else 0,
+            "pose.rz": math.radians(drot_xyz[2]) if not self.lock_rotation else 0,
         }
 
         # if action_dict["pose.rx"] != 0 or action_dict["pose.ry"] != 0 or action_dict["pose.rz"] != 0:

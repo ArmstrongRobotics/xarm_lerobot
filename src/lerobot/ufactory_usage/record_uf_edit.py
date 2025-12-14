@@ -192,6 +192,7 @@ def record_loop(
                     "pose.rx": safe_added_angles["pose.rx"],
                     "pose.ry": safe_added_angles["pose.ry"],
                     "pose.rz": safe_added_angles["pose.rz"],
+                    "gripper.pos" : action["gripper.pos"]
                 })
 
                 if action["pose.rx"] != 0 or action["pose.ry"] != 0 or action["pose.rz"] != 0:

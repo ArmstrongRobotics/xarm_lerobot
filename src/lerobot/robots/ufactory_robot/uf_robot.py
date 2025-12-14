@@ -146,9 +146,15 @@ class UFRobot(Robot, Thread):
             raise RuntimeError(f"Failed to set correct state to UF robot! Controller Error code: {self._get_arm_err()} !")
 
         if self.config.gripper_control:
-            self.real_arm.set_gripper_enable(True)
-            self.real_arm.set_gripper_mode(0)
-            self.real_arm.set_gripper_speed(3000)
+            
+            self.real_arm.robotiq_open()
+            self.real_arm.robotiq_reset()
+            self.real_arm.robotiq_set_activate()
+
+     
+            # self.real_arm.set_gripper_enable(True)
+            # self.real_arm.set_gripper_mode(0)
+            # self.real_arm.set_gripper_speed(3000)
             if not self._get_arm_err() == 0:
                 raise RuntimeError(f"Failed to set correct state to Gripper! Controller Error code: {self._get_arm_err()} !")
         
@@ -203,12 +209,14 @@ class UFRobot(Robot, Thread):
         
         if self.config.gripper_control:    
             # TODO: Add gripper pose
-            code, grippos = self.real_arm.get_gripper_position()
+            # code, grippos = self.real_arm.get_gripper_position()
 
             self.logs["read_pos_dt_s"] = time.perf_counter() - before_read_t
             # states[1] as joint velo
-            grippos_norm = ( self.GRIPPER_OPEN - grippos ) / (self.GRIPPER_OPEN - self.GRIPPER_CLOSE)
-            obs_dict["gripper.pos"] = grippos_norm
+            # grippos_norm = ( self.GRIPPER_OPEN - grippos ) / (self.GRIPPER_OPEN - self.GRIPPER_CLOSE)
+            # obs_dict["gripper.pos"] = grippos_norm
+            obs_dict["gripper.pos"] = self.real_arm.robotiq_status['gPO']
+
 
         # Capture images from cameras
         for cam_key, cam in self.cameras.items():
@@ -245,6 +253,7 @@ class UFRobot(Robot, Thread):
                 time.sleep(0.1)
 
             self.real_arm.set_servo_angle(angle=cmd_list[:7], speed=jnt_spd, is_radian=True, wait=wait_)
+            assert False, "Need to adjust this to work properly with robotiq gripper"
             gripper_command = self.GRIPPER_OPEN + cmd_list[7] * (self.GRIPPER_CLOSE - self.GRIPPER_OPEN)
         elif self._control_space == "cartesian": # unit: mm? 
             lin_spd = MAX_LINEAR_VELOCITY_MM
@@ -255,12 +264,14 @@ class UFRobot(Robot, Thread):
             # print(f"\t{cmd_list}")
             self.real_arm.set_position_aa(axis_angle_pose=cmd_list, speed=lin_spd, is_radian=True, wait=False)
             if self.config.gripper_control:
-                gripper_command = self.GRIPPER_OPEN + action["gripper.pos"] * (self.GRIPPER_CLOSE - self.GRIPPER_OPEN)
+                # gripper_command = self.GRIPPER_OPEN + action["gripper.pos"] * (self.GRIPPER_CLOSE - self.GRIPPER_OPEN)
+                gripper_command = action["gripper.pos"]
 
         if self._cmd_cnt < 99999:
             self._cmd_cnt += 1 # CHECK!! possibility of overflow?
         if self.config.gripper_control:
-            self.real_arm.set_gripper_position(gripper_command, wait=False) # CHECK! the command unit
+            # self.real_arm.set_gripper_position(gripper_command, wait=False) # CHECK! the command unit
+            self.real_arm.robotiq_set_position(gripper_command, wait=True)
         self.logs["write_pos_dt_s"] = time.perf_counter() - before_write_t
         return action
 

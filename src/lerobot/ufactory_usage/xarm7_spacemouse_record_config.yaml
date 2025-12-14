@@ -4,7 +4,7 @@ RobotConfig:
   robot_dof: 7
   robot_ip: "10.11.12.103"
   control_space: "cartesian"
-  gripper_control: False
+  gripper_control: True
 
 DatasetRecordConfig:
   _target_: lerobot.scripts.lerobot_record.DatasetRecordConfig
@@ -20,4 +20,4 @@ DatasetRecordConfig:
 TeleoperatorConfig:
   _target_: lerobot.teleoperators.space_mouse.SpaceMouseTeleopConfig
   max_value: 300
-  use_gripper: False
+  use_gripper: True

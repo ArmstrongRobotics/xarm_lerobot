@@ -54,6 +54,8 @@ class SpaceMouseTeleop(Teleoperator, Thread):
             [0,-1,0]
         ], dtype=np.float32)
 
+        self.desired_gripper_pos = 0        # default open
+
 
     @property
     def action_features(self) -> dict:
@@ -169,6 +171,17 @@ class SpaceMouseTeleop(Teleoperator, Thread):
         dpos = sm_state[:3] * self.max_pos_speed / self.frequency
         drot_xyz = sm_state[3:] * (self.max_rot_speed / self.frequency)
         
+        if self.is_button_pressed(0):
+            print("BUTTON ZERO PRESSED!!")
+
+        if self.is_button_pressed(1):
+            # swap hold open/closed when gripper is pressed
+            print("BUTTON ONE PRESSED!!")
+            if self.desired_gripper_pos == 244:
+                self.desired_gripper_pos = 0
+            else:
+                self.desired_gripper_pos = 244
+
         # if not self.is_button_pressed(0):
         #     # translation mode
         #     drot_xyz[:] = 0
@@ -179,7 +192,7 @@ class SpaceMouseTeleop(Teleoperator, Thread):
         # X-Y 2D translation mode, no gripper control. Modify the code if you need more DOF control
         # dpos[2] = 0    
 
-        gripper_action = 1.0
+        # gripper_action = 1.0
 
         # output is delta change of the robot pose
         action_dict = {
@@ -195,7 +208,7 @@ class SpaceMouseTeleop(Teleoperator, Thread):
         #     print(f"\tinput rot: (x: {action_dict['pose.rx']:0.3f}) (y: {action_dict['pose.ry']:0.3f}) (z: {action_dict['pose.rz']:0.3f})")
 
         if self.config.use_gripper:
-            action_dict.update({"gripper.pos": gripper_action})
+            action_dict.update({"gripper.pos": self.desired_gripper_pos})
 
         return action_dict
 

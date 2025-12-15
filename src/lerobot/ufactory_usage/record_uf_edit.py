@@ -128,6 +128,12 @@ def record_loop(
                 "For multi-teleop, the list must contain exactly one KeyboardTeleop and one arm teleoperator. Currently only supported for LeKiwi robot."
             )
 
+    
+    # while True:
+    #     action = teleop.get_action() 
+    #     print(f"ACTION: {action}")
+    #     time.sleep(0.1)
+    
     # if policy is given it needs cleaning up
     if policy is not None:
         policy.reset()

@@ -9,12 +9,19 @@ import numpy as np
 from typing import Any
 from lerobot.utils.errors import DeviceAlreadyConnectedError, DeviceNotConnectedError
 from collections import defaultdict
-from threading import Thread
+from threading import Thread, Event, Lock
 
 from lerobot.teleoperators import Teleoperator
 from .config_xarm_leader import xArmLeaderTeleopConfig
 
 from lerobot.robots.ufactory_robot import UFRobot
+
+
+# if ("DISPLAY" not in os.environ) and ("linux" in sys.platform):
+#     logging.info("No DISPLAY set. Skipping pynput import.")
+#     raise ImportError("pynput blocked intentionally due to no display.")
+from pynput import keyboard
+
 
 class xArmLeaderTeleop(Teleoperator, UFRobot):
     
@@ -26,9 +33,21 @@ class xArmLeaderTeleop(Teleoperator, UFRobot):
         Thread.__init__(self) # Do NOT REMOVE!
         UFRobot.__init__(self, config.robot_config)
 
+        self.callback_lock = Lock()
+        self.desired_gripper_pos = 0        # default open
+        self.listener = None
+
+    def on_space(self, key):
+        if key == keyboard.Key.space:
+            with self.callback_lock:
+                # swap hold open/closed when gripper is pressed
+                if self.desired_gripper_pos == 244:
+                    self.desired_gripper_pos = 0
+                else:
+                    self.desired_gripper_pos = 244
+
     def configure(self) -> None:
         # put leader arm into free drive
-        
         self.real_arm.motion_enable()
         self.real_arm.set_mode(0)
         time.sleep(.01)
@@ -48,10 +67,15 @@ class xArmLeaderTeleop(Teleoperator, UFRobot):
             self.start()
         time.sleep(0.2)
 
+        self.listener = keyboard.Listener(on_press=self.on_space)
+        self.listener.start()
 
     # NOTE: this is an absolute action.... probably want to change this to delta?
     def get_action(self) -> dict[str, Any]:
-        return UFRobot.get_observation(self)
+        obs_dict =  UFRobot.get_observation(self)
+        with self.callback_lock:
+            obs_dict.update({"gripper.pos": self.desired_gripper_pos})
+        return obs_dict
         
     @property
     def action_features(self) -> dict:

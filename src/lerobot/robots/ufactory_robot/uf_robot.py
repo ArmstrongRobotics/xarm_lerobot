@@ -12,8 +12,8 @@ from threading import Thread, Event, Lock
 from .uf_report_utils import *
 
 ## Configurations:
-MAX_LINEAR_VELOCITY_MM = 200
-MAX_JOINT_VELOCITY_RAD = 1.6
+MAX_LINEAR_VELOCITY_MM = 750
+MAX_JOINT_VELOCITY_RAD = 3.14
 INIT_SYNC_JOINT_VELOCITY_RAD = 0.2
 
 CARTESIAN_OBS_KEYS = [
@@ -309,6 +309,13 @@ class UFRobot(Robot, Thread):
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.setblocking(True)
         sock.settimeout(1)
+
+
+        print(f"\n\nCONNECTING ON: {self.config.robot_ip} {robot_port}\n\n")
+
+
+
+
         sock.connect((self.config.robot_ip, robot_port))
 
         buffer = sock.recv(4)

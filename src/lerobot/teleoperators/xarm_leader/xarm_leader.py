@@ -51,20 +51,17 @@ class xArmLeaderTeleop(Teleoperator, UFRobot):
         self.real_arm.motion_enable()
         self.real_arm.set_mode(0)
         time.sleep(.01)
+
+        self.real_arm.set_teach_sensitivity(5)       # least stiff setting
         self.real_arm.set_mode(2, 1)
         self.real_arm.set_state(0)
 
         if not self._get_arm_err() == 0:
             raise RuntimeError(f"Failed to set correct state to UF robot! Controller Error code: {self._get_arm_err()} !")
-        if self.config.gripper_control:
-            self.real_arm.robotiq_open()
-            self.real_arm.robotiq_reset()
-            self.real_arm.robotiq_set_activate()
-            if not self._get_arm_err() == 0:
-                raise RuntimeError(f"Failed to set correct state to Gripper! Controller Error code: {self._get_arm_err()} !")
 
-        if self._use_rt_report:
-            self.start()
+        
+        # start tracking thread
+        self.start()
         time.sleep(0.2)
 
         self.listener = keyboard.Listener(on_press=self.on_space)

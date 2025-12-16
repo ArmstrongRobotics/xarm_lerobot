@@ -12,7 +12,7 @@ from threading import Thread, Event, Lock
 from .uf_report_utils import *
 
 ## Configurations:
-MAX_LINEAR_VELOCITY_MM = 750
+MAX_LINEAR_VELOCITY_MM = 1000
 MAX_JOINT_VELOCITY_RAD = 3.14
 INIT_SYNC_JOINT_VELOCITY_RAD = 0.2
 
@@ -30,7 +30,7 @@ CARTESIAN_ACTION_KEYS = [
 class UFRobot(Robot, Thread):
 
     config_class = UFRobotConfig
-    name = "UFACTORY Robot"
+    name = "ufactory"
 
     def __init__(self, config: UFRobotConfig):
         super().__init__(config)

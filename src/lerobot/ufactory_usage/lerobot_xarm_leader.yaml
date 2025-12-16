@@ -1,0 +1,29 @@
+robot:
+  type: uf_robot
+  id: "jason"
+  robot_dof: 7
+  robot_ip: "10.11.12.103"
+  control_space: "cartesian"
+  gripper_control: True
+
+teleop:
+  type: xarm_leader
+  robot_config:
+    type: uf_robot
+    id: "jason"
+    robot_dof: 7
+    robot_ip: "10.11.12.102"
+    control_space: "cartesian"
+    gripper_control: True
+
+dataset:
+  repo_id: "Armstrong-Couch/xarm_plate_pinch"
+  single_task: "Pick the top plate from the stack on the right side and place it back down on the left side"
+  fps: 30
+  episode_time_s: 60
+  reset_time_s: 60
+  num_episodes: 50
+  push_to_hub: True
+  private: False
+  num_image_writer_processes: 0
+  num_image_writer_threads_per_camera: 4

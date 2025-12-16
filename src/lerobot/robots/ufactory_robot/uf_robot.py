@@ -43,7 +43,7 @@ class UFRobot(Robot, Thread):
         self._control_space = self.config.control_space
 
         self.real_arm = None
-        self.cameras = {} # make_cameras_from_configs(config.cameras)
+        self.cameras = make_cameras_from_configs(config.cameras)
 
         self._is_connected = False
         self._is_calibrated =True

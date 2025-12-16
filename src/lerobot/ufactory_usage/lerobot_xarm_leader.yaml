@@ -5,6 +5,23 @@ robot:
   robot_ip: "10.11.12.103"
   control_space: "cartesian"
   gripper_control: True
+  cameras:
+    overhead:
+      type: opencv
+      # get single frame: v4l2-ctl --device /dev/video1 --set-fmt-video=width=1280,height=720,pixelformat=MJPG --stream-mmap --stream-to=frame.jpg --stream-count=1
+      index_or_path: "/dev/video0"
+      fps: 30
+      width: 640
+      height: 480
+
+
+    tool:
+      type: opencv
+      index_or_path: "/dev/video2"
+      fps: 30
+      width: 640
+      height: 480
+
 
 teleop:
   type: xarm_leader
@@ -15,6 +32,7 @@ teleop:
     robot_ip: "10.11.12.102"
     control_space: "cartesian"
     gripper_control: True
+    cameras: {}
 
 dataset:
   repo_id: "Armstrong-Couch/xarm_plate_pinch"

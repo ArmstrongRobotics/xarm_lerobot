@@ -19,7 +19,7 @@ output_dir: "outputs/train/act_xarm_plate_pinch"
 
 
 dataset:
-  repo_id="Armstrong-Couch/xarm_plate_pinch"
+  repo_id: "Armstrong-Couch/xarm_plate_pinch"
 
 
 policy:

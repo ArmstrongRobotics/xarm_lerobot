@@ -52,6 +52,8 @@ from lerobot.utils.utils import (
     init_logging,
 )
 
+from tqdm import tqdm
+
 
 def update_policy(
     train_metrics: MetricsTracker,
@@ -329,7 +331,7 @@ def train(cfg: TrainPipelineConfig, accelerator: Accelerator | None = None):
     if is_main_process:
         logging.info("Start offline training on a fixed dataset")
 
-    for _ in range(step, cfg.steps):
+    for _ in tqdm(range(step, cfg.steps)):
         start_time = time.perf_counter()
         batch = next(dl_iter)
         batch = preprocessor(batch)

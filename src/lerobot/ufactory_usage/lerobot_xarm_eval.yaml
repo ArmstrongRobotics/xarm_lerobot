@@ -23,20 +23,27 @@ robot:
       height: 480
 
 
-teleop:
-  type: xarm_leader
-  robot_config:
-    type: uf_robot
-    id: "jason"
-    robot_dof: 7
-    robot_ip: "10.11.12.102"
-    control_space: "cartesian"
-    gripper_control: True
-    cameras: {}
+# teleop:
+#   type: xarm_leader
+#   robot_config:
+#     type: uf_robot
+#     id: "jason"
+#     robot_dof: 7
+#     robot_ip: "10.11.12.102"
+#     control_space: "cartesian"
+#     gripper_control: True
+#     cameras: {}
+
+
+policy:
+  type: act
+  device: cuda
+  repo_id: "Armstrong-Couch/act_xarm_plate_pinch"
+
 
 dataset:
-  repo_id: "Armstrong-Couch/xarm_cup_pinch"
-  single_task: "Pick a cup and place it into the bus tub"
+  repo_id: "Armstrong-Couch/xarm_plate_pinch"
+  single_task: "Pick the top plate from the stack on the right side and place it back down on the left side"
   fps: 30
   episode_time_s: 180
   reset_time_s: 60

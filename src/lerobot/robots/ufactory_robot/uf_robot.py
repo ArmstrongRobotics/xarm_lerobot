@@ -12,8 +12,8 @@ from threading import Thread, Event, Lock
 from .uf_report_utils import *
 
 ## Configurations:
-MAX_LINEAR_VELOCITY_MM = 1000
-MAX_JOINT_VELOCITY_RAD = 3.14
+MAX_LINEAR_VELOCITY_MM = 250
+MAX_JOINT_VELOCITY_RAD = 1.6
 INIT_SYNC_JOINT_VELOCITY_RAD = 0.2
 
 CARTESIAN_OBS_KEYS = [
@@ -265,7 +265,7 @@ class UFRobot(Robot, Thread):
             self.real_arm.set_position_aa(axis_angle_pose=cmd_list, speed=lin_spd, is_radian=True, wait=False)
             if self.config.gripper_control:
                 # gripper_command = self.GRIPPER_OPEN + action["gripper.pos"] * (self.GRIPPER_CLOSE - self.GRIPPER_OPEN)
-                gripper_command = action["gripper.pos"]
+                gripper_command = int(action["gripper.pos"])
 
         if self._cmd_cnt < 99999:
             self._cmd_cnt += 1 # CHECK!! possibility of overflow?

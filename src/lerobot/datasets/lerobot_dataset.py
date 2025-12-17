@@ -1024,6 +1024,18 @@ class LeRobotDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx) -> dict:
         # Ensure dataset is loaded when we actually need to read from it
+        exception = None
+        for idx in range(5):
+            try:
+                return self.getitem(idx)
+            except Exception as e:
+                print(f"Skipping invalid index ({idx}) in worker")
+                idx = torch.randint(len(self), ()).item()
+                exception = e
+        raise exception
+
+
+    def getitem(self, idx):
         self._ensure_hf_dataset_loaded()
         item = self.hf_dataset[idx]
         ep_idx = item["episode_index"].item()

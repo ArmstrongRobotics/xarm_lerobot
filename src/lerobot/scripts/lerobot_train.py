@@ -333,7 +333,13 @@ def train(cfg: TrainPipelineConfig, accelerator: Accelerator | None = None):
 
     for _ in tqdm(range(step, cfg.steps)):
         start_time = time.perf_counter()
-        batch = next(dl_iter)
+        while True:
+            try:
+                batch = next(dl_iter)
+                break
+            except:
+                print("Skipping batch due to invalid data?")
+
         batch = preprocessor(batch)
         train_tracker.dataloading_s = time.perf_counter() - start_time
 

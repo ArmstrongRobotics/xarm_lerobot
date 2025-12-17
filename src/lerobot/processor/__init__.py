@@ -51,6 +51,7 @@ from .hil_processor import (
 )
 from .joint_observations_processor import JointVelocityProcessorStep, MotorCurrentProcessorStep
 from .normalize_processor import NormalizerProcessorStep, UnnormalizerProcessorStep, hotswap_stats
+from .pose_processor import AxisAngleToRot6d, Rot6dToAxisAngle
 from .observation_processor import VanillaObservationProcessorStep
 from .pipeline import (
     ActionProcessorStep,

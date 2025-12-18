@@ -1024,15 +1024,15 @@ class LeRobotDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx) -> dict:
         # Ensure dataset is loaded when we actually need to read from it
-        exception = None
-        for _ in range(5):
-            try:
-                return self.getitem(idx)
-            except Exception as e:
-                print(f"Skipping invalid index ({idx}) in worker")
-                idx = torch.randint(len(self), ()).item()
-                exception = e
-        raise exception
+        # exception = None
+        # for _ in range(5):
+        #     try:
+        return self.getitem(idx)
+        #     except Exception as e:
+        #         print(f"Skipping invalid index ({idx}) in worker")
+        #         idx = torch.randint(len(self), ()).item()
+        #         exception = e
+        # raise exception
 
 
     def getitem(self, idx):

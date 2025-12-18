@@ -19,6 +19,7 @@ As per Learning Fine-Grained Bimanual Manipulation with Low-Cost Hardware (https
 The majority of changes here involve removing unused code, unifying naming, and adding helpful comments.
 """
 
+import time
 import math
 from collections import deque
 from collections.abc import Callable
@@ -124,6 +125,7 @@ class ACTPolicy(PreTrainedPolicy):
     def predict_action_chunk(self, batch: dict[str, Tensor]) -> Tensor:
         """Predict a chunk of actions given environment observations."""
         self.eval()
+        print(f"PREDICTING NEW ACTION CHUNK ({time.time():.3f})")
 
         if self.config.image_features:
             batch = dict(batch)  # shallow copy so that adding a key doesn't modify the original

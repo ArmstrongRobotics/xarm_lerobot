@@ -107,24 +107,34 @@ class Rot6dToAxisAngle(ProcessorStep):
     def _convert(self, inp):
         dev = inp.device
         inp = inp.cpu()
+        assert len(inp.shape) == 1
         assert inp.shape[-1] == 10, f"Invalid shape: {inp.shape}"
         
         x_col = inp[..., 3:6]
         x_col /= torch.linalg.norm(x_col)
         y_col = inp[..., 6:9]
+        y_col = y_col - torch.dot(x_col, y_col) * x_col        # gram-schmidt orthogonalization of model rotation outputs        
+        y_col = y_col / torch.linalg.norm(y_col)
+        z_col = torch.linalg.cross(x_col, y_col)                      # calculate third column of rotation matrix through cross product
+        z_col = z_col / torch.linalg.norm(z_col)
 
-        pdb.set_trace()
+        # build + serialize homogenous 4x4 rotation matrix. convert to axis angle
+        out = torch.zeros((3, 3), dtype=x_col.dtype)
+        out[:3, 0] = x_col
+        out[:3, 1] = y_col
+        out[:3, 2] = z_col
+        out = torch.from_numpy(R.from_matrix(out).as_rotvec(degrees=False))
 
-        y_col = y_col - np.dot(x_col, y_col) * x_col        # gram-schmidt orthogonalization of model rotation outputs        
-        y_col = y_col / np.linalg.norm(y_col)
-        z_col = np.cross(x_col, y_col)                      # calculate third column of rotation matrix through cross product
 
-        # build + serialize homogenous 4x4 rotation matrix
-        out = torch.zeros((x_col.shape[0], 3, 3), dtype=x_col.dtype)
-        out[:, :3, 0] = x_col
-        out[:, :3, 1] = y_col
-        out[:, :3, 2] = z_col
-        return torch.from_numpy(R.from_matrix(out).as_rotvec()).to(dev, non_blocking=True)
+
+        # reassemble output format
+        out = torch.concat([
+            inp[:3],        # translations
+            out,            # axis-angle rotation
+            inp[9:]         # gripper
+        ], dim=-1)     
+        assert out.shape[0] == 7
+        return out.to(dev, non_blocking=True)
 
 
     def __call__(self, transition: EnvTransition) -> EnvTransition:

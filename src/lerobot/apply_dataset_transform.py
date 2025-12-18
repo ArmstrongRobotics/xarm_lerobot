@@ -17,7 +17,7 @@ import copy
 import torch
 
 CARTESIAN_ROT6D_KEYS = [
-    'pose.x', 'pose.x', 'pose.x',
+    'pose.x', 'pose.y', 'pose.z',
     'pose.rot6d_1x', 'pose.rot6d_1y', 'pose.rot6d_1z',
     'pose.rot6d_2x', 'pose.rot6d_2y', 'pose.rot6d_2z', 
     'gripper.pos'

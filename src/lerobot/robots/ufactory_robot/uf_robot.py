@@ -2,6 +2,8 @@
 
 import time
 import numpy as np
+import torch
+import pdb
 from lerobot.cameras.utils import make_cameras_from_configs
 
 from lerobot.robots import Robot
@@ -11,7 +13,7 @@ from xarm.wrapper import XArmAPI
 from threading import Thread, Event, Lock
 from .uf_report_utils import *
 from lerobot.apply_dataset_transform import CARTESIAN_ROT6D_KEYS
-from lerobot.processor import Rot6dToAxisAngle
+from lerobot.processor import Rot6dToAxisAngle, AxisAngleToRot6d
 
 ## Configurations:
 MAX_LINEAR_VELOCITY_MM = 250
@@ -60,7 +62,7 @@ class UFRobot(Robot, Thread):
         self.report_stop_event = Event()
         self._rt_report_normal = False
         self._update_lock = Lock()
-        self._use_rt_report = (self._control_space == "cartesian") # Cartesian observations must utilize rt_report
+        self._use_rt_report = (self._control_space == "cartesian" or self._control_space == "rot6d") # Cartesian observations must utilize rt_report
         self._cart_obs_has_vel = any('velo.' in key for key in CARTESIAN_OBS_KEYS)
         self._jnt_obs_has_vel = self.config.observe_joint_vel
 
@@ -75,6 +77,10 @@ class UFRobot(Robot, Thread):
                 state_features.update({"gripper.pos": float})
         elif self._control_space == "cartesian":
             state_features = {key: float for key in CARTESIAN_OBS_KEYS}
+            if self.config.gripper_control:
+                state_features.update({"gripper.pos": float})
+        elif self._control_space == "rot6d":
+            state_features = {key: float for key in CARTESIAN_ROT6D_KEYS}
             if self.config.gripper_control:
                 state_features.update({"gripper.pos": float})
         else:
@@ -99,6 +105,8 @@ class UFRobot(Robot, Thread):
             action_ft = {f"J{motor}.pos": float for motor in range(1, self._dof+1)}
         elif self._control_space == "cartesian":
             action_ft = {key: float for key in CARTESIAN_ACTION_KEYS}
+        elif self._control_space == "rot6d":
+            action_ft = {key: float for key in CARTESIAN_ROT6D_KEYS}
         else:
             raise ValueError(f"Please check the given control space of uf_robot! got {self._control_space}")
         # Consider adding velocity configuration ??
@@ -137,7 +145,7 @@ class UFRobot(Robot, Thread):
         self.real_arm.motion_enable()
         if self._control_space == "joint":
             self.real_arm.set_mode(6) 
-        elif self._control_space == "cartesian":
+        elif self._control_space == "cartesian" or self._control_space == "rot6d":
             self.real_arm.set_mode(7)
         else:
             raise ValueError(f"Please check the given control space of uf_robot! got {self._control_space}")
@@ -191,7 +199,7 @@ class UFRobot(Robot, Thread):
             if self._jnt_obs_has_vel:
                 vel_list = states[1].copy()
                 obs_dict.update({f"J{k+1}.vel": vel_list[k] for k in range(self._dof)})
-        elif self._control_space == "cartesian":
+        elif self._control_space == "cartesian" or self._control_space == "rot6d":
             if not self._rt_report_normal:
                 raise ConnectionError("RT Report for target robot NOT READY! ")
 
@@ -202,10 +210,17 @@ class UFRobot(Robot, Thread):
                 # vel_cmd_list = self.rt_cmd_tcp_vel.copy()
                 # jpos_fbk_list = self.rt_actual_joint_pos.copy()
                 # jvel_fbk_list = self.rt_actual_joint_speed.copy()
-
-            obs_dict = {"pose.x": pos_list[0],"pose.y": pos_list[1],"pose.z": pos_list[2],"pose.rx": pos_list[3],"pose.ry": pos_list[4],"pose.rz": pos_list[5]}
-            if self._cart_obs_has_vel:
-                obs_dict.update({"velo.x": vel_list[0], "velo.y": vel_list[1], "velo.z": vel_list[2], "velo.rx": vel_list[3], "velo.ry": vel_list[4], "velo.rz": vel_list[5]})
+        
+            if self._control_space == "rot6d":
+                rot6d = AxisAngleToRot6d()._convert(torch.tensor(pos_list[:6] + [0]).unsqueeze(0)).squeeze()
+                obs_dict = {k : rot6d[v] for k, v in zip(CARTESIAN_ROT6D_KEYS, range(rot6d.shape[0]))}
+                del obs_dict["gripper.pos"]
+                # obs_dict = {"pose.x": pos_list[0],"pose.y": pos_list[1],"pose.z": pos_list[2],"pose.rx": pos_list[3],"pose.ry": pos_list[4],"pose.rz": pos_list[5]}
+                assert not self._cart_obs_has_vel
+            else:
+                obs_dict = {"pose.x": pos_list[0],"pose.y": pos_list[1],"pose.z": pos_list[2],"pose.rx": pos_list[3],"pose.ry": pos_list[4],"pose.rz": pos_list[5]}
+                if self._cart_obs_has_vel:
+                    obs_dict.update({"velo.x": vel_list[0], "velo.y": vel_list[1], "velo.z": vel_list[2], "velo.rx": vel_list[3], "velo.ry": vel_list[4], "velo.rz": vel_list[5]})
         else:
             ValueError(f"Please check the given control space of uf_robot! got {self._control_space}")
         
@@ -232,11 +247,6 @@ class UFRobot(Robot, Thread):
         if not self._is_connected:
             raise ConnectionError()
 
-        if CARTESIAN_ROT6D_KEYS[-2] in action:
-            assert len(list(action.keys())) == 10, f"Unexpected action format of size {len(list(action.keys()))}"
-            axis_angle_actions = Rot6dToAxisAngle()._convert(torch.tensor([action[i] for i in CARTESIAN_ROT6D_KEYS]))
-            action = {k : v for k, v in zip(CARTESIAN_ACTION_KEYS, axis_angle_actions)}
-
         before_write_t = time.perf_counter()
         if self._control_space == "joint":
             # first sync with gello or other control device SLOWLY!
@@ -262,7 +272,13 @@ class UFRobot(Robot, Thread):
             self.real_arm.set_servo_angle(angle=cmd_list[:7], speed=jnt_spd, is_radian=True, wait=wait_)
             assert False, "Need to adjust this to work properly with robotiq gripper"
             gripper_command = self.GRIPPER_OPEN + cmd_list[7] * (self.GRIPPER_CLOSE - self.GRIPPER_OPEN)
-        elif self._control_space == "cartesian": # unit: mm? 
+        elif self._control_space == "cartesian" or self._control_space == "rot6d": # unit: mm? 
+            if self._control_space == "rot6d":
+                assert len(list(action.keys())) == 10, f"Unexpected action format of size {len(list(action.keys()))}"
+                axis_angle_actions = Rot6dToAxisAngle()._convert(torch.tensor([action[i] for i in CARTESIAN_ROT6D_KEYS]))
+                action = {k : v for k, v in zip(CARTESIAN_ACTION_KEYS + ["gripper.pos"], axis_angle_actions)}
+                assert len(action) == 7
+
             lin_spd = MAX_LINEAR_VELOCITY_MM
             
             if not self._rt_report_normal:
@@ -272,7 +288,7 @@ class UFRobot(Robot, Thread):
             self.real_arm.set_position_aa(axis_angle_pose=cmd_list, speed=lin_spd, is_radian=True, wait=False)
             if self.config.gripper_control:
                 # gripper_command = self.GRIPPER_OPEN + action["gripper.pos"] * (self.GRIPPER_CLOSE - self.GRIPPER_OPEN)
-                gripper_command = int(action["gripper.pos"])
+                gripper_command = min(max(0, int(action["gripper.pos"])), 244)
 
         if self._cmd_cnt < 99999:
             self._cmd_cnt += 1 # CHECK!! possibility of overflow?

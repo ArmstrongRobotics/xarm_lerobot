@@ -14,18 +14,18 @@ use_policy_training_preset: True
 
 # checkpoint_path: Path | None = field(init=False, default=None)
 resume: False
-job_name: "cup_1217_rot6d_dp"
-output_dir: "outputs/train/cup_1217_rot6d_dp"
+job_name: "cup_1217_rot6d_v3_dp"
+output_dir: "outputs/train/cup_1217_rot6d_v3_dp"
 
 
 dataset:
-  repo_id: "Armstrong-Couch/xarm_cup_pinch_1217_rot6d_v2"
+  repo_id: "Armstrong-Couch/xarm_cup_pinch_1217_rot6d_v3"
 
 
 policy:
   type: diffusion
   device: cuda
-  repo_id: "cup_1217_rot6d_dp"
+  repo_id: "cup_1217_rot6d_v3_dp"
   pretrained_backbone_weights: "ResNet18_Weights.IMAGENET1K_V1"
   use_group_norm: false
 

@@ -19,7 +19,7 @@ output_dir: "outputs/train/cup_1217_rot6d_dp"
 
 
 dataset:
-  repo_id: "Armstrong-Couch/xarm_cup_pinch_1217_rot6d"
+  repo_id: "Armstrong-Couch/xarm_cup_pinch_1217_rot6d_v2"
 
 
 policy:

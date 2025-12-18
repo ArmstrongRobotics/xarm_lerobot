@@ -29,6 +29,6 @@ policy:
 
 
 wandb:
-  enable: false
+  enable: true
 
 

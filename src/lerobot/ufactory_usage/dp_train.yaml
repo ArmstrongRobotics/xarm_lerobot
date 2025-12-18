@@ -14,7 +14,7 @@ use_policy_training_preset: True
 
 # checkpoint_path: Path | None = field(init=False, default=None)
 resume: False
-job_name: "cup_1217_rot6d"
+job_name: "cup_1217_rot6d_dp"
 output_dir: "outputs/train/cup_1217_rot6d_dp"
 
 
@@ -31,6 +31,6 @@ policy:
 
 
 wandb:
-  enable: true
+  enable: false
 
 

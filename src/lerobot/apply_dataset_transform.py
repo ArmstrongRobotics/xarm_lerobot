@@ -16,6 +16,13 @@ from tqdm import tqdm
 import copy
 import torch
 
+CARTESIAN_ROT6D_KEYS = [
+    'pose.x', 'pose.x', 'pose.x',
+    'pose.rot6d_1x', 'pose.rot6d_1y', 'pose.rot6d_1z',
+    'pose.rot6d_2x', 'pose.rot6d_2y', 'pose.rot6d_2z', 
+    'gripper.pos'
+]
+
 def get_new_dataset(input_repo_id, output_repo_id, aa_to_rot6d):
     assert input_repo_id != output_repo_id and output_repo_id != "", f"Invalid output repo ID"
     existing_dataset = LeRobotDataset(input_repo_id)
@@ -25,19 +32,9 @@ def get_new_dataset(input_repo_id, output_repo_id, aa_to_rot6d):
         assert new_features['action']['shape'][0] == 7
         assert new_features['observation.state']['shape'][0] == 7
         new_features['action']['shape'] = (10,)
-        new_features['action']['names'] = [
-            'pose.x', 'pose.x', 'pose.x',
-            'pose.rot6d_1x', 'pose.rot6d_1y', 'pose.rot6d_1z',
-            'pose.rot6d_2x', 'pose.rot6d_2y', 'pose.rot6d_2z', 
-            'gripper.pos'
-        ]
+        new_features['action']['names'] = CARTESIAN_ROT6D_KEYS
         new_features['observation.state']['shape'] = (10,)
-        new_features['observation.state']['names'] = [
-            'pose.x', 'pose.x', 'pose.x',
-            'pose.rot6d_1x', 'pose.rot6d_1y', 'pose.rot6d_1z',
-            'pose.rot6d_2x', 'pose.rot6d_2y', 'pose.rot6d_2z', 
-            'gripper.pos'
-        ]
+        new_features['observation.state']['names'] = CARTESIAN_ROT6D_KEYS
 
     # create a new dataset with same metadata settings
     new_dataset = LeRobotDataset.create(

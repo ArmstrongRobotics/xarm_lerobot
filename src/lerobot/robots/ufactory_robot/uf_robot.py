@@ -10,6 +10,8 @@ from .config_uf_robot import UFRobotConfig
 from xarm.wrapper import XArmAPI
 from threading import Thread, Event, Lock
 from .uf_report_utils import *
+from lerobot.apply_dataset_transform import CARTESIAN_ROT6D_KEYS
+from lerobot.processor import Rot6dToAxisAngle
 
 ## Configurations:
 MAX_LINEAR_VELOCITY_MM = 250
@@ -229,6 +231,11 @@ class UFRobot(Robot, Thread):
     def send_action(self, action: dict) -> np.ndarray:
         if not self._is_connected:
             raise ConnectionError()
+
+        if CARTESIAN_ROT6D_KEYS[-2] in action:
+            assert len(list(action.keys())) == 10, f"Unexpected action format of size {len(list(action.keys()))}"
+            axis_angle_actions = Rot6dToAxisAngle()._convert(torch.tensor([action[i] for i in CARTESIAN_ROT6D_KEYS]))
+            action = {k : v for k, v in zip(CARTESIAN_ACTION_KEYS, axis_angle_actions)}
 
         before_write_t = time.perf_counter()
         if self._control_space == "joint":

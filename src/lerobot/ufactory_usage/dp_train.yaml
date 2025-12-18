@@ -1,0 +1,36 @@
+num_workers:  4
+batch_size:  8
+steps: 100_000
+eval_freq: 20_000
+log_freq: 200
+
+save_checkpoint: True
+save_freq: 20_000
+
+use_policy_training_preset: True
+# optimizer: OptimizerConfig | None = None
+# scheduler: LRSchedulerConfig | None = None
+
+
+# checkpoint_path: Path | None = field(init=False, default=None)
+resume: False
+job_name: "cup_1217_rot6d"
+output_dir: "outputs/train/cup_1217_rot6d_dp"
+
+
+dataset:
+  repo_id: "Armstrong-Couch/xarm_cup_pinch_1217_rot6d"
+
+
+policy:
+  type: diffusion
+  device: cuda
+  repo_id: "cup_1217_rot6d_dp"
+  pretrained_backbone_weights: "ResNet18_Weights.IMAGENET1K_V1"
+  use_group_norm: false
+
+
+wandb:
+  enable: true
+
+

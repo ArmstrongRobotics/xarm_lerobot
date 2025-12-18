@@ -14,21 +14,21 @@ use_policy_training_preset: True
 
 # checkpoint_path: Path | None = field(init=False, default=None)
 resume: False
-job_name: "act_xarm_plate_pinch"
-output_dir: "outputs/train/act_xarm_plate_pinch"
+job_name: "cup_1217_rot6d"
+output_dir: "outputs/train/cup_1217_rot6d"
 
 
 dataset:
-  repo_id: "Armstrong-Couch/xarm_plate_pinch"
+  repo_id: "Armstrong-Couch/xarm_cup_pinch_1217_rot6d"
 
 
 policy:
   type: act
   device: cuda
-  repo_id: "Armstrong-Couch/act_xarm_plate_pinch"
+  repo_id: "cup_1217_rot6d"
 
 
 wandb:
-  enable: true
+  enable: false
 
 

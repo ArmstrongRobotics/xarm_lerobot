@@ -45,7 +45,7 @@ def get_new_dataset(input_repo_id, output_repo_id, aa_to_rot6d):
         features=new_features,
         use_videos=True,
         image_writer_processes=0,
-        image_writer_threads=8,
+        image_writer_threads=4,
         batch_encoding_size=existing_dataset.batch_encoding_size,
         tolerance_s=existing_dataset.tolerance_s
     )
@@ -59,25 +59,39 @@ def convert(input_repo_id: str, output_repo_id: str, aa_to_rot6d: bool = False, 
     # apply transform to each step in dataset, write result to new dataset
     with VideoEncodingManager(new_dataset):
         for eps_idx in tqdm(range(num_episodes)):
-            existing_dataset = LeRobotDataset(input_repo_id, episodes=[eps_idx])
-            for idx in range(len(existing_dataset)):
-                frame = existing_dataset[idx]
-                if aa_to_rot6d:
-                    frame['action'] = rot6d_transform._convert(frame['action'].unsqueeze(0)).squeeze().to(torch.float32)
-                    frame['observation.state'] = rot6d_transform._convert(frame['observation.state'].unsqueeze(0)).squeeze().to(torch.float32)
-                
-                for k in frame:
-                    if "image" in k and frame[k].shape[0] == 3:
-                        frame[k] = frame[k].permute((1, 2, 0))
-                
-                del frame['timestamp']
-                del frame['episode_index']
-                del frame['frame_index']
-                del frame['index']
-                del frame['task_index']
+            done = False
+            exception = None
+            for _ in range(3):
+                try:
+                    existing_dataset = LeRobotDataset(input_repo_id, episodes=[eps_idx])
+                    for idx in range(len(existing_dataset)):
+                        frame = existing_dataset[idx]
+                        if aa_to_rot6d:
+                            frame['action'] = rot6d_transform._convert(frame['action'].unsqueeze(0)).squeeze().to(torch.float32)
+                            frame['observation.state'] = rot6d_transform._convert(frame['observation.state'].unsqueeze(0)).squeeze().to(torch.float32)
+                        
+                        for k in frame:
+                            if "image" in k and frame[k].shape[0] == 3:
+                                frame[k] = frame[k].permute((1, 2, 0))
+                        
+                        del frame['timestamp']
+                        del frame['episode_index']
+                        del frame['frame_index']
+                        del frame['index']
+                        del frame['task_index']
 
-                new_dataset.add_frame(frame)
-            new_dataset.save_episode()
+                        new_dataset.add_frame(frame)
+                    new_dataset.save_episode()
+                    done = True
+                    break
+                except Exception as e:
+                    print(e)
+                    exception = e
+                    time.sleep(5)
+            if not done:
+                import pdb
+                pdb.set_trace()
+                raise e
 
     if push_to_hub:
         new_dataset.push_to_hub(tags=None, private=False)

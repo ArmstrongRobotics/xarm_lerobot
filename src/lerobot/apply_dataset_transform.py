@@ -28,13 +28,13 @@ def get_new_dataset(input_repo_id, output_repo_id, aa_to_rot6d):
     existing_dataset = LeRobotDataset(input_repo_id)
     new_features = copy.deepcopy(existing_dataset.features)
 
-    if aa_to_rot6d:
-        assert new_features['action']['shape'][0] == 7
-        assert new_features['observation.state']['shape'][0] == 7
-        new_features['action']['shape'] = (10,)
-        new_features['action']['names'] = CARTESIAN_ROT6D_KEYS
-        new_features['observation.state']['shape'] = (10,)
-        new_features['observation.state']['names'] = CARTESIAN_ROT6D_KEYS
+    # if aa_to_rot6d:
+    #     assert new_features['action']['shape'][0] == 7
+    #     assert new_features['observation.state']['shape'][0] == 7
+    #     new_features['action']['shape'] = (10,)
+    #     new_features['action']['names'] = CARTESIAN_ROT6D_KEYS
+    #     new_features['observation.state']['shape'] = (10,)
+    #     new_features['observation.state']['names'] = CARTESIAN_ROT6D_KEYS
 
     # create a new dataset with same metadata settings
     new_dataset = LeRobotDataset.create(
@@ -58,18 +58,26 @@ def convert(input_repo_id: str, output_repo_id: str, aa_to_rot6d: bool = False, 
 
     # apply transform to each step in dataset, write result to new dataset
     with VideoEncodingManager(new_dataset):
-        for eps_idx in tqdm(range(num_episodes)):
+        for eps_idx in tqdm(range(2)):
             existing_dataset = LeRobotDataset(input_repo_id, episodes=[eps_idx])
-            for idx in range(len(existing_dataset)):
-                frame = existing_dataset[idx]
-                if aa_to_rot6d:
-                    frame['action'] = rot6d_transform._convert(frame['action'].unsqueeze(0)).squeeze().to(torch.float32)
-                    frame['observation.state'] = rot6d_transform._convert(frame['observation.state'].unsqueeze(0)).squeeze().to(torch.float32)
-                
+            dataloader = torch.utils.data.DataLoader(existing_dataset, num_workers=0, batch_size=1)
+
+            for frame in dataloader:
+            
+                import pdb
+                pdb.set_trace()
+            
+                # frame = copy.deepcopy(existing_dataset[idx])
+                # if aa_to_rot6d:
+                #     frame['action'] = rot6d_transform._convert(frame['action'].unsqueeze(0)).squeeze().to(torch.float32)
+                #     frame['observation.state'] = rot6d_transform._convert(frame['observation.state'].unsqueeze(0)).squeeze().to(torch.float32)
+                frame['action'] = frame['action'].squeeze()
+                frame['observation.state'] = frame['observation.state'].squeeze()
+
+
                 for k in frame:
-                    if "image" in k and frame[k].shape[0] == 3:
-                        frame[k] = frame[k].permute((1, 2, 0))
-                
+                    if "image" in k and frame[k].squeeze().shape[0] == 3:
+                        frame[k] = frame[k].squeeze().permute((1, 2, 0)).clone()
                 del frame['timestamp']
                 del frame['episode_index']
                 del frame['frame_index']
@@ -77,6 +85,10 @@ def convert(input_repo_id: str, output_repo_id: str, aa_to_rot6d: bool = False, 
                 del frame['task_index']
 
                 new_dataset.add_frame(frame)
+
+                import pdb
+                pdb.set_trace()
+
             new_dataset.save_episode()
 
     if push_to_hub:

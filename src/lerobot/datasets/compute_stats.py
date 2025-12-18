@@ -244,7 +244,7 @@ def sample_images(image_paths: list[str]) -> np.ndarray:
         # if images is None:
         #     images = np.empty((len(sampled_indices), *img.shape), dtype=np.uint8)
         # images[i] = img
-        images.append(img)
+        images.append(img.copy())
     assert len(images) > 0, "Failed to load any sampled images"
     return np.stack(images)
 

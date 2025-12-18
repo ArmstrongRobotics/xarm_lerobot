@@ -1025,7 +1025,7 @@ class LeRobotDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx) -> dict:
         # Ensure dataset is loaded when we actually need to read from it
         exception = None
-        for idx in range(5):
+        for _ in range(5):
             try:
                 return self.getitem(idx)
             except Exception as e:

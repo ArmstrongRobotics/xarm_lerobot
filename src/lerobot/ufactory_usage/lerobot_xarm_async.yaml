@@ -3,7 +3,7 @@
 # python -m lerobot.async_inference.policy_server --host=192.168.86.117 --port=8002   
 
 # run robot client on inference machine 
-# 
+# python -m lerobot.async_inference.robot_client --config lerobot_xarm_async.yaml
 
 robot:
   type: uf_robot

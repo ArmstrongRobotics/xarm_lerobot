@@ -45,6 +45,7 @@ from typing import Any
 import draccus
 import grpc
 import torch
+import io
 
 from lerobot.cameras.opencv.configuration_opencv import OpenCVCameraConfig  # noqa: F401
 from lerobot.cameras.realsense.configuration_realsense import RealSenseCameraConfig  # noqa: F401
@@ -283,7 +284,12 @@ class RobotClient:
 
                 # Deserialize bytes back into list[TimedAction]
                 deserialize_start = time.perf_counter()
-                timed_actions = pickle.loads(actions_chunk.data)  # nosec
+                # timed_actions = pickle.loads(actions_chunk.data)  # nosec
+                timed_actions = torch.load(
+                    io.BytesIO(actions_chunk.data),
+                    map_location=torch.device("cpu"),
+                    weights_only=False
+                )
                 deserialize_time = time.perf_counter() - deserialize_start
 
                 self.action_chunk_size = max(self.action_chunk_size, len(timed_actions))

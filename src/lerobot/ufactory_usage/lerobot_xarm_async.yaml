@@ -25,9 +25,9 @@ robot:
 
 policy_type: act
 policy_device: cuda
-pretrained_name_or_path: "/home/armstrong/cup_1217_rot6d_v3_act_b48_60k"
+pretrained_name_or_path: "Armstrong-Couch/cup_1217_rot6d_v3_act_b48"
 task: "Pick a cup and place it into the bus tub"
 fps: 30
-server_address: "192.168.86.31"   # nzxt
+server_address: "192.168.86.117:8002"   # office-unloader
 actions_per_chunk: 100
 chunk_size_threshold: 0.5

@@ -235,7 +235,7 @@ class PolicyServer(services_pb2_grpc.AsyncInferenceServicer):
             inference_time = time.perf_counter() - start_time
 
             start_time = time.perf_counter()
-            actions_bytes = pickle.dumps(action_chunk)  # nosec
+            actions_bytes = pickle.dumps(action_chunk.cpu())  # nosec
             serialize_time = time.perf_counter() - start_time
 
             # Create and return the action chunk

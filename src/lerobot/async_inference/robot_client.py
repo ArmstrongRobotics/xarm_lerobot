@@ -284,12 +284,7 @@ class RobotClient:
 
                 # Deserialize bytes back into list[TimedAction]
                 deserialize_start = time.perf_counter()
-                # timed_actions = pickle.loads(actions_chunk.data)  # nosec
-                timed_actions = torch.load(
-                    io.BytesIO(actions_chunk.data),
-                    map_location=torch.device("cpu"),
-                    weights_only=False
-                )
+                timed_actions = pickle.loads(actions_chunk.data)  # nosec
                 deserialize_time = time.perf_counter() - deserialize_start
 
                 self.action_chunk_size = max(self.action_chunk_size, len(timed_actions))

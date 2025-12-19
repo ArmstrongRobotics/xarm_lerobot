@@ -378,7 +378,7 @@ class PolicyServer(services_pb2_grpc.AsyncInferenceServicer):
             processed_actions.append(processed_action)
 
         # Stack back to (B, chunk_size, action_dim), then remove batch dim
-        action_tensor = torch.stack(processed_actions, dim=1).squeeze(0)
+        action_tensor = torch.stack(processed_actions, dim=1).squeeze(0).cpu()
         self.logger.debug(f"Postprocessed action shape: {action_tensor.shape}")
 
         """5. Convert to TimedAction list"""

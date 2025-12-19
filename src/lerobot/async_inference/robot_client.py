@@ -45,6 +45,7 @@ from typing import Any
 import draccus
 import grpc
 import torch
+import io
 
 from lerobot.cameras.opencv.configuration_opencv import OpenCVCameraConfig  # noqa: F401
 from lerobot.cameras.realsense.configuration_realsense import RealSenseCameraConfig  # noqa: F401
@@ -56,6 +57,7 @@ from lerobot.robots import (  # noqa: F401
     make_robot_from_config,
     so100_follower,
     so101_follower,
+    ufactory_robot
 )
 from lerobot.transport import (
     services_pb2,  # type: ignore

@@ -31,6 +31,7 @@ python record_uf_edit.py --config xarm7_gello_record_config.yaml --resume
 ```
 """
 
+import copy
 import logging
 import time
 from dataclasses import asdict, dataclass
@@ -77,6 +78,16 @@ from lerobot.utils.utils import (
 from lerobot.utils.visualization_utils import init_rerun, log_rerun_data
 from lerobot.scripts.lerobot_record import DatasetRecordConfig, RecordConfig
 
+from scipy.spatial.transform import Rotation as R
+import numpy as np
+
+
+def safe_add_rotations(obs, action):
+    # safely apply action euler angles to current state given in euler angles
+    rot1 = R.from_rotvec(obs, degrees=False)
+    rot2 = R.from_euler('xyz', action, degrees=False)
+    rot_combined = rot1 * rot2
+    return rot_combined.as_rotvec(degrees=False)
 
 @safe_stop_image_writer
 def record_loop(
@@ -117,6 +128,12 @@ def record_loop(
                 "For multi-teleop, the list must contain exactly one KeyboardTeleop and one arm teleoperator. Currently only supported for LeKiwi robot."
             )
 
+    
+    # while True:
+    #     action = teleop.get_action() 
+    #     print(f"ACTION: {action}")
+    #     time.sleep(0.1)
+    
     # if policy is given it needs cleaning up
     if policy is not None:
         policy.reset()
@@ -153,7 +170,53 @@ def record_loop(
             action = teleop.get_action() 
             # (space mouse) from delta Cartesian cmd to absolute command
             if "pose.dx" in action:
-                last_robot_cmd.update({"pose.x": last_robot_cmd["pose.x"] + action["pose.dx"], "pose.y": last_robot_cmd["pose.y"] + action["pose.dy"], "pose.z": last_robot_cmd["pose.z"] + action["pose.dz"]})
+                prev = copy.deepcopy(last_robot_cmd)
+
+                # space mouse given as euler angles, xArm observation given as axis-angle
+                safe_added_angles = safe_add_rotations(
+                    np.array([observation["pose.rx"], observation["pose.ry"], observation["pose.rz"]]),
+                    np.array([action["pose.rx"], action["pose.ry"], action["pose.rz"]])
+                )
+
+
+                # safe_added_angles = safe_add_rotations(
+                #     np.array([last_robot_cmd["pose.rx"], last_robot_cmd["pose.ry"], last_robot_cmd["pose.rz"]]),
+                #     np.array([action["pose.rx"], action["pose.ry"], action["pose.rz"]])
+                # )
+
+
+                safe_added_angles = {
+                    "pose.rx" : safe_added_angles[0],
+                    "pose.ry" : safe_added_angles[1],
+                    "pose.rz" : safe_added_angles[2]
+                }
+
+                last_robot_cmd.update({
+                    "pose.x": observation["pose.x"] + action["pose.dx"], 
+                    "pose.y": observation["pose.y"] + action["pose.dy"], 
+                    "pose.z": observation["pose.z"] + action["pose.dz"],
+                    "pose.rx": safe_added_angles["pose.rx"],
+                    "pose.ry": safe_added_angles["pose.ry"],
+                    "pose.rz": safe_added_angles["pose.rz"],
+                    "gripper.pos" : action["gripper.pos"]
+                })
+
+                if action["pose.rx"] != 0 or action["pose.ry"] != 0 or action["pose.rz"] != 0:
+                    RESET = "\033[0m"
+                    CYAN = "\033[36m"
+                    GREEN = "\033[32m"
+                    YELLOW = "\033[33m"
+                    MAGENTA = "\033[35m"
+                    
+                    print(f"\n\t{GREEN}({timestamp:.3f}){RESET}")
+                    print(f"\t\tinput (x: {action['pose.rx']:0.3f}) (y: {action['pose.ry']:0.3f}) (z: {action['pose.rz']:0.3f})")
+                    print(f"\t\toutput (x: {last_robot_cmd['pose.rx']:0.3f}) (y: {last_robot_cmd['pose.ry']:0.3f}) (z: {last_robot_cmd['pose.rz']:0.3f})")
+                    print(f"\t\tobs (x: {observation['pose.rx']:0.3f}) (y: {observation['pose.ry']:0.3f}) (z: {observation['pose.rz']:0.3f}))")
+                    print(f"\t\tlast (x: {prev['pose.rx']:0.3f}) (y: {prev['pose.ry']:0.3f}) (z: {prev['pose.rz']:0.3f}))")
+
+
+                
+                
                 action = last_robot_cmd.copy() # watch out this is shallow copy, not for nested dict
 
         elif policy is None and isinstance(teleop, list):

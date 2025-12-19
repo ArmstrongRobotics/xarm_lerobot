@@ -17,11 +17,19 @@
 from dataclasses import dataclass
 
 from lerobot.teleoperators import TeleoperatorConfig
+from lerobot.robots import RobotConfig
+from lerobot.robots.ufactory_robot import UFRobotConfig
 
 
-@TeleoperatorConfig.register_subclass("space_mouse")
+@TeleoperatorConfig.register_subclass("xarm_leader")
 @dataclass
-class SpaceMouseTeleopConfig(TeleoperatorConfig):
+class xArmLeaderTeleopConfig(TeleoperatorConfig):
+    
+    # TODO: need a UFRobotConfig here...
+
+    robot_config: RobotConfig = UFRobotConfig()
+    
+    
     # Port to connect to the arm
     max_value: int = 300
     deadzone: tuple = (0,0,0,0,0,0)

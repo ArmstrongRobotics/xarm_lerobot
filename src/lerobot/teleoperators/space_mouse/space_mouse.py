@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import math
 import logging
 import os
 import sys
@@ -28,6 +29,7 @@ class SpaceMouseTeleop(Teleoperator, Thread):
         self.max_value = config.max_value
         self.frequency = config.frequency
         self.max_pos_speed = config.max_pos_speed
+        self.max_rot_speed = config.max_rot_speed
         deadzone = config.deadzone
         self._is_connected = False
         self.dtype = np.float32 # CHECK! make it configurable ???
@@ -45,6 +47,19 @@ class SpaceMouseTeleop(Teleoperator, Thread):
             [1,0,0],
             [0,1,0]
         ], dtype=np.float32)
+
+        self.rx_zup_spnav = np.array([
+            [-1,0,0],
+            [0,0,1],
+            [0,-1,0]
+        ], dtype=np.float32)
+
+        self.desired_gripper_pos = 0        # default open
+        
+        self.lock_rotation = False
+        self.button_zero_release = True
+
+
 
     @property
     def action_features(self) -> dict:
@@ -125,7 +140,7 @@ class SpaceMouseTeleop(Teleoperator, Thread):
         state = self.get_motion_state()
         tf_state = np.zeros_like(state)
         tf_state[:3] = self.tx_zup_spnav @ state[:3]
-        tf_state[3:] = self.tx_zup_spnav @ state[3:]
+        tf_state[3:] = self.rx_zup_spnav @ state[3:]
         return tf_state
 
     def is_button_pressed(self, button_id):
@@ -158,10 +173,33 @@ class SpaceMouseTeleop(Teleoperator, Thread):
         sm_state = self.get_motion_state_transformed()
 
         dpos = sm_state[:3] * self.max_pos_speed / self.frequency
-            
-        # Currently No rotation operation 
-        # drot_xyz = sm_state[3:] * (max_rot_speed / frequency)
+        drot_xyz = sm_state[3:] * (self.max_rot_speed / self.frequency)
         
+        if self.is_button_pressed(0):
+            if self.button_zero_release:
+                RESET = "\033[0m"
+                CYAN = "\033[36m"
+                GREEN = "\033[32m"
+                YELLOW = "\033[33m"
+                MAGENTA = "\033[35m"
+                if self.lock_rotation:
+                    print(f"{YELLOW}UNLOCK ROTATION{RESET}")
+                    self.lock_rotation = False
+                else:
+                    print(f"{YELLOW}LOCK ROTATION{RESET}")
+                    self.lock_rotation = True
+            self.button_zero_release = False
+        else:
+            self.button_zero_release = True
+
+
+        if self.is_button_pressed(1):
+            # swap hold open/closed when gripper is pressed
+            if self.desired_gripper_pos == 244:
+                self.desired_gripper_pos = 0
+            else:
+                self.desired_gripper_pos = 244
+
         # if not self.is_button_pressed(0):
         #     # translation mode
         #     drot_xyz[:] = 0
@@ -170,19 +208,25 @@ class SpaceMouseTeleop(Teleoperator, Thread):
         # if not self.is_button_pressed(1):
         
         # X-Y 2D translation mode, no gripper control. Modify the code if you need more DOF control
-        dpos[2] = 0    
+        # dpos[2] = 0    
 
-        gripper_action = 1.0
+        # gripper_action = 1.0
 
         # output is delta change of the robot pose
         action_dict = {
             "pose.dx": dpos[0],
             "pose.dy": dpos[1],
             "pose.dz": dpos[2],
+            "pose.rx": math.radians(drot_xyz[0]) if not self.lock_rotation else 0,
+            "pose.ry": math.radians(drot_xyz[1]) if not self.lock_rotation else 0,
+            "pose.rz": math.radians(drot_xyz[2]) if not self.lock_rotation else 0,
         }
 
+        # if action_dict["pose.rx"] != 0 or action_dict["pose.ry"] != 0 or action_dict["pose.rz"] != 0:
+        #     print(f"\tinput rot: (x: {action_dict['pose.rx']:0.3f}) (y: {action_dict['pose.ry']:0.3f}) (z: {action_dict['pose.rz']:0.3f})")
+
         if self.config.use_gripper:
-            action_dict.update({"gripper.pos": gripper_action})
+            action_dict.update({"gripper.pos": self.desired_gripper_pos})
 
         return action_dict
 

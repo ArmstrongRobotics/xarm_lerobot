@@ -378,7 +378,17 @@ def encode_video_frames(
         # Loop through input frames and encode them
         for input_data in input_list:
             with Image.open(input_data) as input_image:
-                input_image = input_image.convert("RGB")
+                try:
+                    input_image = input_image.convert("RGB")
+                except OSError as e:
+                    print(f"FAILED TO LOAD: {input_data}")
+                    # raise e
+                    
+                    import pdb
+                    pdb.set_trace()
+                    
+                    import sys
+                    sys.exit(0)
                 input_frame = av.VideoFrame.from_image(input_image)
                 packet = output_stream.encode(input_frame)
                 if packet:

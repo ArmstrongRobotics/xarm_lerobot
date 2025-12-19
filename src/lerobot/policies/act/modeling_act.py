@@ -19,6 +19,7 @@ As per Learning Fine-Grained Bimanual Manipulation with Low-Cost Hardware (https
 The majority of changes here involve removing unused code, unifying naming, and adding helpful comments.
 """
 
+import time
 import math
 from collections import deque
 from collections.abc import Callable
@@ -124,6 +125,7 @@ class ACTPolicy(PreTrainedPolicy):
     def predict_action_chunk(self, batch: dict[str, Tensor]) -> Tensor:
         """Predict a chunk of actions given environment observations."""
         self.eval()
+        print(f"PREDICTING NEW ACTION CHUNK ({time.time():.3f})")
 
         if self.config.image_features:
             batch = dict(batch)  # shallow copy so that adding a key doesn't modify the original
@@ -142,9 +144,20 @@ class ACTPolicy(PreTrainedPolicy):
 
         l1_loss = (
             F.l1_loss(batch[ACTION], actions_hat, reduction="none") * ~batch["action_is_pad"].unsqueeze(-1)
-        ).mean()
+        )
 
-        loss_dict = {"l1_loss": l1_loss.item()}
+        loss_dict = {}
+        loss_dict["trans_l1"] = l1_loss[..., :3].mean().item()
+        if l1_loss.shape[-1] == 10:
+            loss_dict["rot_l1"] = l1_loss[..., 3:9].mean().item()
+            loss_dict["gripper_l1"] = l1_loss[..., 9].mean().item()
+        else:
+            assert l1_loss.shape[-1] == 7, f"Unexpected format: {l1_loss.shape}"
+            loss_dict["rot_l1"] = l1_loss[..., 3:6].mean().item()
+            loss_dict["gripper_l1"] = l1_loss[..., 6].mean().item()
+
+        l1_loss = l1_loss.mean()
+        loss_dict["l1_loss"] = l1_loss.item()
         if self.config.use_vae:
             # Calculate Dₖₗ(latent_pdf || standard_normal). Note: After computing the KL-divergence for
             # each dimension independently, we sum over the latent dimension to get the total

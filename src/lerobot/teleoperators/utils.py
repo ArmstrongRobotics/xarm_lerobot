@@ -83,8 +83,10 @@ def make_teleoperator_from_config(config: TeleoperatorConfig) -> Teleoperator:
         return GelloxArm7(config)
     elif config.type == "space_mouse":
         from .space_mouse import SpaceMouseTeleop
-        
         return SpaceMouseTeleop(config)
+    elif config.type == "xarm_leader":
+        from .xarm_leader import xArmLeaderTeleop
+        return xArmLeaderTeleop(config)
     else:
         try:
             return cast(Teleoperator, make_device_from_device_class(config))

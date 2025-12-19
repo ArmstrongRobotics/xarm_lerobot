@@ -230,19 +230,23 @@ def auto_downsample_height_width(img: np.ndarray, target_size: int = 150, max_si
 def sample_images(image_paths: list[str]) -> np.ndarray:
     sampled_indices = sample_indices(len(image_paths))
 
-    images = None
+    images = []
     for i, idx in enumerate(sampled_indices):
         path = image_paths[idx]
         # we load as uint8 to reduce memory usage
-        img = load_image_as_numpy(path, dtype=np.uint8, channel_first=True)
+        try:
+            img = load_image_as_numpy(path, dtype=np.uint8, channel_first=True)
+        except OSError:
+            # OSError: unrecognized data stream contents when reading image file
+            continue
         img = auto_downsample_height_width(img)
 
-        if images is None:
-            images = np.empty((len(sampled_indices), *img.shape), dtype=np.uint8)
-
-        images[i] = img
-
-    return images
+        # if images is None:
+        #     images = np.empty((len(sampled_indices), *img.shape), dtype=np.uint8)
+        # images[i] = img
+        images.append(img)
+    assert len(images) > 0, "Failed to load any sampled images"
+    return np.stack(images)
 
 
 def _reshape_stats_by_axis(

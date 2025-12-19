@@ -1,0 +1,49 @@
+robot:
+  type: uf_robot
+  id: "jason"
+  robot_dof: 7
+  robot_ip: "10.11.12.103"
+  control_space: "rot6d"
+  gripper_control: True
+  cameras:
+    overhead:
+      type: opencv
+      # get single frame: v4l2-ctl --device /dev/video0 --set-fmt-video=width=1280,height=720,pixelformat=MJPG --stream-mmap --stream-to=frame.jpg --stream-count=1
+      index_or_path: "/dev/v4l/by-id/usb-USB_4K_Camera_USB_4K_Camera_SN0132-video-index0"
+      fps: 30
+      width: 640
+      height: 480
+
+
+    tool:
+      type: opencv
+      index_or_path: "/dev/v4l/by-id/usb-USB_4K_Camera_USB_4K_Camera_SN0110-video-index0"
+      fps: 30
+      width: 640
+      height: 480
+
+policy:
+  type: act
+  device: cuda
+  # repo_id: "Armstrong-Couch/act_xarm_plate_pinch"
+  chunk_size: 100
+  n_action_steps: 50
+
+
+display_data: True
+resume: False
+
+
+
+dataset:
+  repo_id: "Armstrong-Couch/eval_dset"
+  single_task: "Pick a cup and place it into the bus tub"
+  fps: 30
+  episode_time_s: 180
+  reset_time_s: 60
+  num_episodes: 50
+  push_to_hub: False
+  private: False
+  num_image_writer_processes: 0
+  num_image_writer_threads_per_camera: 4
+

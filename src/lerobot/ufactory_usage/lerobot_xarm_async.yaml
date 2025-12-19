@@ -22,28 +22,12 @@ robot:
       width: 640
       height: 480
 
-policy:
-  type: act
-  device: cuda
-  # repo_id: "Armstrong-Couch/act_xarm_plate_pinch"
-  chunk_size: 100
-  n_action_steps: 50
 
-
-display_data: True
-resume: False
-
-
-
-dataset:
-  repo_id: "Armstrong-Couch/eval_dset"
-  single_task: "Pick a cup and place it into the bus tub"
-  fps: 30
-  episode_time_s: 180
-  reset_time_s: 60
-  num_episodes: 50
-  push_to_hub: False
-  private: False
-  num_image_writer_processes: 0
-  num_image_writer_threads_per_camera: 4
-
+policy_type: act
+policy_device: cuda
+pretrained_name_or_path: "/home/armstrong/cup_1217_rot6d_v3_act_b48_60k"
+task: "Pick a cup and place it into the bus tub"
+fps: 30
+server_address: "192.168.86.31"   # nzxt
+actions_per_chunk: 100
+chunk_size_threshold: 0.5

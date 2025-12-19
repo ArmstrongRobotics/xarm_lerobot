@@ -1,3 +1,10 @@
+
+# run policy server on GPU machine
+# python -m lerobot.async_inference.policy_server --host=192.168.86.117 --port=8002   
+
+# run robot client on inference machine 
+# 
+
 robot:
   type: uf_robot
   id: "jason"
